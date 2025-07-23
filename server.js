@@ -43,6 +43,46 @@ app.get('/health', (req, res) => {
   res.send('OK');
 });
 
+// Diagnostic endpoint
+app.get('/debug', async (req, res) => {
+  const { exec } = require('child_process');
+  const util = require('util');
+  const execPromise = util.promisify(exec);
+  
+  const diagnostics = {
+    node_version: process.version,
+    platform: process.platform,
+    cwd: process.cwd(),
+    env_path: process.env.PATH,
+    python_check: 'checking...',
+    pip_check: 'checking...',
+    youtube_api_check: 'checking...'
+  };
+  
+  try {
+    const { stdout: pythonVersion } = await execPromise('python3 --version');
+    diagnostics.python_check = pythonVersion.trim();
+  } catch (e) {
+    diagnostics.python_check = 'Python3 not found: ' + e.message;
+  }
+  
+  try {
+    const { stdout: pipVersion } = await execPromise('pip3 --version');
+    diagnostics.pip_check = pipVersion.trim();
+  } catch (e) {
+    diagnostics.pip_check = 'Pip3 not found: ' + e.message;
+  }
+  
+  try {
+    const { stdout: apiCheck } = await execPromise('python3 -c "import youtube_transcript_api; print(\'youtube-transcript-api installed\')"');
+    diagnostics.youtube_api_check = apiCheck.trim();
+  } catch (e) {
+    diagnostics.youtube_api_check = 'youtube-transcript-api not installed: ' + e.message;
+  }
+  
+  res.json(diagnostics);
+});
+
 // Extract channel handle from various URL formats
 function extractChannelIdentifier(url) {
   const patterns = {
