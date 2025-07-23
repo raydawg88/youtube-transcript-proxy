@@ -43,6 +43,45 @@ app.get('/health', (req, res) => {
   res.send('OK');
 });
 
+// Single video endpoint for testing
+app.post('/video', async (req, res) => {
+  const { videoUrl } = req.body;
+  
+  if (!videoUrl) {
+    return res.status(400).json({ error: 'Missing videoUrl' });
+  }
+  
+  try {
+    // Extract video ID from URL
+    const videoIdMatch = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+    if (!videoIdMatch) {
+      return res.status(400).json({ error: 'Invalid YouTube video URL' });
+    }
+    
+    const videoId = videoIdMatch[1];
+    console.log(`Processing single video: ${videoId}`);
+    
+    // Fetch transcript
+    const transcript = await fetchTranscript(videoId);
+    
+    res.json({
+      success: true,
+      videoId,
+      videoUrl,
+      hasTranscript: !!transcript,
+      transcript: transcript,
+      transcriptLength: transcript ? transcript.length : 0
+    });
+    
+  } catch (error) {
+    console.error('Video processing error:', error);
+    res.status(500).json({ 
+      error: 'Failed to process video',
+      details: error.message 
+    });
+  }
+});
+
 // Diagnostic endpoint
 app.get('/debug', async (req, res) => {
   const { exec } = require('child_process');
@@ -250,6 +289,8 @@ async function fetchTranscript(videoId) {
       }
     }
     
+    // ALWAYS log the output for debugging
+    console.log(`Python stdout for ${videoId}:`, stdout);
     if (stderr) {
       console.error(`Python stderr for ${videoId}:`, stderr);
     }
@@ -266,6 +307,7 @@ async function fetchTranscript(videoId) {
     }
   } catch (error) {
     console.error(`Error fetching transcript for ${videoId}:`, error.message);
+    console.error(`Full error:`, error);
     return null;
   }
 }
