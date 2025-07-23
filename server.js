@@ -80,6 +80,22 @@ app.get('/debug', async (req, res) => {
     diagnostics.youtube_api_check = 'youtube-transcript-api not installed: ' + e.message;
   }
   
+  // Check Python path
+  try {
+    const { stdout: pythonPath } = await execPromise('python3 -c "import sys; print(sys.path)"');
+    diagnostics.python_path = pythonPath.trim();
+  } catch (e) {
+    diagnostics.python_path = 'Could not get Python path';
+  }
+  
+  // Check if script exists
+  try {
+    const { stdout: scriptCheck } = await execPromise('ls -la get_transcript.py');
+    diagnostics.script_exists = scriptCheck.trim();
+  } catch (e) {
+    diagnostics.script_exists = 'Script not found';
+  }
+  
   res.json(diagnostics);
 });
 
@@ -213,10 +229,26 @@ async function fetchTranscript(videoId) {
   try {
     console.log(`Fetching transcript for ${videoId} using youtube-transcript-api...`);
     
-    // Call Python script
-    const { stdout, stderr } = await execPromise(`python3 get_transcript.py ${videoId}`, {
-      timeout: 10000 // 10 second timeout
-    });
+    // Call Python script - try different Python paths
+    let stdout, stderr;
+    try {
+      // First try python3
+      ({ stdout, stderr } = await execPromise(`python3 get_transcript.py ${videoId}`, {
+        timeout: 10000 // 10 second timeout
+      }));
+    } catch (error) {
+      // If python3 fails, try python
+      try {
+        ({ stdout, stderr } = await execPromise(`python get_transcript.py ${videoId}`, {
+          timeout: 10000 // 10 second timeout
+        }));
+      } catch (error2) {
+        // If both fail, try with full path
+        ({ stdout, stderr } = await execPromise(`/usr/bin/python3 get_transcript.py ${videoId}`, {
+          timeout: 10000 // 10 second timeout
+        }));
+      }
+    }
     
     if (stderr) {
       console.error(`Python stderr for ${videoId}:`, stderr);
