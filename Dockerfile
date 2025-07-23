@@ -2,7 +2,7 @@
 FROM node:20-slim
 
 # Install Python and pip
-RUN apt-get update && apt-get install -y python3 python3-pip && \
+RUN apt-get update && apt-get install -y python3 python3-pip python3-venv && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -17,8 +17,8 @@ RUN npm ci --production
 # Copy Python requirements
 COPY requirements.txt ./
 
-# Install Python dependencies
-RUN pip3 install --no-cache-dir -r requirements.txt
+# Install Python dependencies with --break-system-packages flag
+RUN pip3 install --break-system-packages --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .

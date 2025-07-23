@@ -1,10 +1,10 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "python311", "python311Packages.pip"]
+nixPkgs = ["nodejs_20", "python311"]
 
 [phases.install]
 cmds = [
     "npm ci --production",
-    "pip3 install -r requirements.txt"
+    "pip install --user youtube-transcript-api"
 ]
 
 [start]
