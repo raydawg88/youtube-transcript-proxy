@@ -31,3 +31,19 @@ Server runs on port 3457 by default.
 ## Environment Variables
 
 - `PORT` - Server port (default: 3457)
+
+## Known Issues
+
+### YouTube IP Blocking on Cloud Providers
+
+YouTube blocks requests from most cloud provider IPs (AWS, Google Cloud, Azure, Railway, etc.). This affects the transcript extraction functionality when deployed to cloud services.
+
+**Current Status**: The channel video scraping works, but transcript extraction is blocked on Railway.
+
+**Workarounds being investigated**:
+1. Using proxy services
+2. Client-side transcript fetching
+3. Alternative hosting providers
+4. Browser automation (Puppeteer/Playwright)
+
+**Local Development**: Works fine on local machines with residential IPs.
