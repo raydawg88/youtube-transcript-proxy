@@ -164,50 +164,38 @@ async function scrapeChannelVideos(channelUrl) {
   }
 }
 
-// Fetch transcript using timedtext endpoint
+// Fetch transcript using Python youtube-transcript-api
 async function fetchTranscript(videoId) {
-  const languages = ['en', 'en-US', 'en-GB', 'a.en', 'auto'];
+  const { exec } = require('child_process');
+  const util = require('util');
+  const execPromise = util.promisify(exec);
   
-  for (const lang of languages) {
-    try {
-      const url = `http://video.google.com/timedtext?lang=${lang}&v=${videoId}`;
-      console.log(`Trying transcript: ${url}`);
-      
-      const response = await axios.get(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        },
-        timeout: 5000
-      });
-      
-      console.log(`[${videoId}] Response status: ${response.status}, Length: ${response.data ? response.data.length : 0}`);
-      
-      if (response.data && response.data.includes('<transcript>')) {
-        // Parse XML to extract text
-        const textMatches = response.data.match(/<text[^>]*>(.*?)<\/text>/g) || [];
-        const transcript = textMatches.map(match => {
-          const text = match.replace(/<text[^>]*>/, '').replace(/<\/text>/, '');
-          // Decode HTML entities
-          return text
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;/g, "'")
-            .replace(/&#x([0-9a-fA-F]+);/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)))
-            .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(parseInt(dec, 10)));
-        }).join(' ').trim();
-        
-        console.log(`✓ Got transcript for ${videoId} (${transcript.length} chars)`);
-        return transcript;
-      }
-    } catch (e) {
-      // Continue trying other languages
+  try {
+    console.log(`Fetching transcript for ${videoId} using youtube-transcript-api...`);
+    
+    // Call Python script
+    const { stdout, stderr } = await execPromise(`python3 get_transcript.py ${videoId}`, {
+      timeout: 10000 // 10 second timeout
+    });
+    
+    if (stderr) {
+      console.error(`Python stderr for ${videoId}:`, stderr);
     }
+    
+    // Parse JSON response
+    const result = JSON.parse(stdout);
+    
+    if (result.success && result.transcript) {
+      console.log(`✓ Got transcript for ${videoId} (${result.length} chars)`);
+      return result.transcript;
+    } else {
+      console.log(`✗ No transcript found for ${videoId}: ${result.error}`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`Error fetching transcript for ${videoId}:`, error.message);
+    return null;
   }
-  
-  console.log(`✗ No transcript found for ${videoId}`);
-  return null;
 }
 
 // Main endpoint - process channel

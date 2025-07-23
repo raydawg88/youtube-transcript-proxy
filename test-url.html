@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Railway Deployment</title>
+</head>
+<body>
+    <h1>Test Railway Deployment</h1>
+    <p>Enter your Railway URL below:</p>
+    <input type="text" id="railwayUrl" placeholder="https://your-app.railway.app" style="width: 400px;">
+    <button onclick="testDeployment()">Test Deployment</button>
+    
+    <div id="results" style="margin-top: 20px; padding: 20px; background: #f0f0f0; display: none;">
+        <h2>Test Results:</h2>
+        <div id="output"></div>
+    </div>
+    
+    <script>
+        async function testDeployment() {
+            const url = document.getElementById('railwayUrl').value.trim();
+            if (!url) {
+                alert('Please enter a Railway URL');
+                return;
+            }
+            
+            const results = document.getElementById('results');
+            const output = document.getElementById('output');
+            results.style.display = 'block';
+            output.innerHTML = 'Testing...';
+            
+            let html = '';
+            
+            // Test root endpoint
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                html += `<p>✅ Root endpoint: ${response.status} - ${data.message || 'Connected'}</p>`;
+            } catch (e) {
+                html += `<p>❌ Root endpoint failed: ${e.message}</p>`;
+            }
+            
+            // Test health endpoint
+            try {
+                const response = await fetch(url + '/health');
+                const text = await response.text();
+                html += `<p>✅ Health endpoint: ${response.status} - ${text}</p>`;
+            } catch (e) {
+                html += `<p>❌ Health endpoint failed: ${e.message}</p>`;
+            }
+            
+            // Test CORS
+            html += `<p>ℹ️ CORS: If you see results above, CORS is working!</p>`;
+            
+            output.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
