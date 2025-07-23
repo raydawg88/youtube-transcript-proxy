@@ -82,6 +82,51 @@ app.post('/video', async (req, res) => {
   }
 });
 
+// Direct test endpoint for transcript
+app.get('/test-transcript/:videoId', async (req, res) => {
+  const { videoId } = req.params;
+  const { exec } = require('child_process');
+  const util = require('util');
+  const execPromise = util.promisify(exec);
+  
+  try {
+    console.log(`Direct test of transcript extraction for ${videoId}`);
+    
+    // Try to run the Python script directly
+    const { stdout, stderr } = await execPromise(`python3 get_transcript.py ${videoId}`, {
+      timeout: 15000,
+      cwd: process.cwd()
+    });
+    
+    console.log('Python stdout:', stdout);
+    console.log('Python stderr:', stderr);
+    
+    res.json({
+      success: true,
+      videoId,
+      pythonStdout: stdout,
+      pythonStderr: stderr || null,
+      parsedResult: (() => {
+        try {
+          return JSON.parse(stdout);
+        } catch (e) {
+          return { parseError: e.message };
+        }
+      })()
+    });
+  } catch (error) {
+    console.error('Test transcript error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stdout: error.stdout,
+      stderr: error.stderr,
+      cwd: process.cwd(),
+      files: require('fs').readdirSync('.')
+    });
+  }
+});
+
 // Diagnostic endpoint
 app.get('/debug', async (req, res) => {
   const { exec } = require('child_process');
