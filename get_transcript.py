@@ -10,10 +10,8 @@ def get_transcript(video_id):
     Returns JSON with transcript data or error.
     """
     try:
-        api = YouTubeTranscriptApi()
-
-        # List all available transcripts
-        transcript_list = api.list(video_id)
+        # List all available transcripts using the static method
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
 
         # Try to find an English transcript
         transcript = None
